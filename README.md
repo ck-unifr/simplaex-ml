@@ -6,30 +6,30 @@ Simplaex ML Coding Task
 Assume, we have historical data about how many megabytes were downloaded from the Internet by some person, split by hour. For each row of data we have two values: hour of day (integer, 0 to 23; we don’t care about the exact day when that happened) and volume in megabytes (float, 0 to 1000):
 
 
-HoD   Volume
+HoD, Volume
 
-0      512.4
+0, 512.4
 
-5       114
+5, 114
 
-15      28
+15, 28
 
-0       12
+0, 12
 
-17      324
+17, 324
 
 
 
 Let’s also assume that this person was paying by traffic volume and the tariffs differ depending on the hour of the day, as follows:
 
 
-Time range         Price in cents per megabyte
+Time range, Price in cents per megabyte
 
-0:00 to 9:00        5
+0:00 to 9:00, 5
 
-9:00 to 18:00       11
+9:00 to 18:00, 11
 
-18:00 to 0:00       19
+18:00 to 0:00, 19
 
 
 Tasks
