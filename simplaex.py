@@ -56,24 +56,38 @@ class InternetData:
         :return: a dataframe
         '''
 
-        def f(x, tarData):
-            '''
-            get correct price of each row of the historical data
-            :param x: the 'hod' of historical data frame
-            :param tarData: the tariffs dataframe
-            :return: the correct price
-            '''
-            for index, row in tarData.iterrows():
-                time_range = row['time-range'].split('-')
-                if int(x) >= int(time_range[0]) and int(x) <= int(time_range[1]):
-                    return row['price']
-            return 0
-
         if how is None or how == '0':
-            self.hisData['cost-per-mega'] = self.hisData['hod'].apply(f, args=[self.tarData])
+            def getDictPrice(tarData):
+                dictPrice = {}
+                for i in range(0, 24):
+                    dictPrice[i] = 0
+                for index, row in tarData.iterrows():
+                    time_range = row['time-range'].split('-')
+                    for i in range(int(time_range[0]), int(time_range[1])+1):
+                        if i <= 23:
+                            dictPrice[i] = row['price']
+                return dictPrice
+            dictPrice = getDictPrice(self.tarData)
+            self.hisData['cost-per-mega'] = self.hisData['hod'].apply(lambda x:dictPrice[int(x)])
             self.hisData['cost'] = self.hisData['cost-per-mega']*self.hisData['volume']
             self.hisData.drop(columns=['cost-per-mega'], inplace=True)
         elif how == '1':
+            def f(x, tarData):
+                '''
+                get correct price of each row of the historical data
+                :param x: the 'hod' of historical data frame
+                :param tarData: the tariffs dataframe
+                :return: the correct price
+                '''
+                for index, row in tarData.iterrows():
+                    time_range = row['time-range'].split('-')
+                    if int(x) >= int(time_range[0]) and int(x) <= int(time_range[1]):
+                        return row['price']
+                return 0
+            self.hisData['cost-per-mega'] = self.hisData['hod'].apply(f, args=[self.tarData])
+            self.hisData['cost'] = self.hisData['cost-per-mega']*self.hisData['volume']
+            self.hisData.drop(columns=['cost-per-mega'], inplace=True)
+        elif how == '2':
             listCost = [0 for i in range(0, len(self.hisData.index))]
             for indexHis, rowHis in self.hisData.iterrows():
                 hod = rowHis['hod']
@@ -116,10 +130,16 @@ def compare_approaches():
     dict_runtime['1'] = time.time() - start_time
     #print(df_hist)
 
+    start_time = time.time()
+    internet3 = InternetData(histData=df_hist)
+    internet3.add_cost(how='2')
+    dict_runtime['2'] = time.time() - start_time
+    # print(df_hist)
+
     print(dict_runtime)
 
 
 
 
 if __name__ == '__main__':
-    compare_approaches()
+   compare_approaches()
