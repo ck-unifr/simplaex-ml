@@ -1,5 +1,5 @@
 # Simplaex ML coding task.
-# The description can be found in README.md
+# The description of the task can be found in README.md
 #
 # author: Kai chen
 # date: Mar 2019
@@ -32,56 +32,73 @@ class InternetData:
             dictHistData['volume'] = [random.uniform(0, 1000) for i_day in range(0, 365) for i_hour in range(0, 24)]
             histData = pd.DataFrame(dictHistData, columns=['hod', 'volume'])
 
-
         if tarData is None:
             dictTarData = {'time-range': [], 'price': []}
-            dictTarData['time-range'] = ['0-9', '9-18', '18-0']
+            dictTarData['time-range'] = ['0:00 to 9:00', '9:00 to 18:00', '18:00 to 0:00']
             dictTarData['price'] = [5, 11, 19]
             tarData = pd.DataFrame(dictTarData, columns=['time-range', 'price'])
 
         self.hisData = histData
         self.tarData = tarData
 
+    def getTime(self, str_time):
+        '''
+        Transfer the string format time to float format time
+        for example, '5:30' -> 5.5
+        :param str_time: time in the string format, e.g. 0:00,
+        :return: time in float format
+        '''
+        arr_time = str_time.split(':')
+        hour = int(arr_time[0])
+        if arr_time[1][0] == '0':
+            minute = int(arr_time[1][1])
+        else:
+            minute = int(arr_time[1])
+        return hour+(minute*1.0/60)
+
+    def getStartStopTime(self, str_time):
+        '''
+        Get the start and stop time in float from a string time in the format ('hour:minute')
+        for example, '0:00 to 9:30' -> 0, 9.5
+        '''
+        arr_time = str_time.split(' ')
+        start_time = self.getTime(arr_time[0])
+        stop_time = self.getTime(arr_time[2])
+        if stop_time < start_time: # because we may have 18:00 to 0:00
+            stop_time = 24
+        return start_time, stop_time
 
     def add_cost(self, how = None):
         '''
         Create a method add_cost(how: String) that will return a historical dataframe with an additional column “cost”
         that will show how much money was spent for every hour in the historical data.
-
         There are multiple ways to do it in pandas, some very slow, some pretty fast. Come up with several solutions, include them all.
-
         The add_cost should choose the method based on the value of its ‘how’ parameter.
-
-        :param how: a string
-        :return: a dataframe
         '''
 
         if how is None or how == '0':
             def getDictPrice(tarData):
-                dictPrice = {}
-                for i in range(0, 24):
-                    dictPrice[i] = 0
+                '''
+                return a dictionary {hour:price} from the tariffs dataframe
+                '''
+                dictPrice = {i:0 for i in range(0, 25)}
                 for index, row in tarData.iterrows():
-                    time_range = row['time-range'].split('-')
-                    for i in range(int(time_range[0]), int(time_range[1])+1):
-                        if i <= 23:
-                            dictPrice[i] = row['price']
+                    start_time, stop_time = self.getStartStopTime(row['time-range'])
+                    for i in range(int(start_time), round(stop_time)):
+                        dictPrice[i] = row['price']
                 return dictPrice
             dictPrice = getDictPrice(self.tarData)
-            self.hisData['cost-per-mega'] = self.hisData['hod'].apply(lambda x:dictPrice[int(x)])
+            self.hisData['cost-per-mega'] = self.hisData['hod'].apply(lambda x : dictPrice[int(x)])
             self.hisData['cost'] = self.hisData['cost-per-mega']*self.hisData['volume']
             self.hisData.drop(columns=['cost-per-mega'], inplace=True)
         elif how == '1':
             def f(x, tarData):
                 '''
-                get correct price of each row of the historical data
-                :param x: the 'hod' of historical data frame
-                :param tarData: the tariffs dataframe
-                :return: the correct price
+                for each row of the historical dataframe, get the price of the hour
                 '''
                 for index, row in tarData.iterrows():
-                    time_range = row['time-range'].split('-')
-                    if int(x) >= int(time_range[0]) and int(x) <= int(time_range[1]):
+                    start_time, stop_time = self.getStartStopTime(row['time-range'])
+                    if int(x) >= int(start_time) and int(x) < round(stop_time):
                         return row['price']
                 return 0
             self.hisData['cost-per-mega'] = self.hisData['hod'].apply(f, args=[self.tarData])
@@ -93,27 +110,22 @@ class InternetData:
                 hod = rowHis['hod']
                 volume = rowHis['volume']
                 for indexTar, rowTar in self.tarData.iterrows():
-                    time_range = rowTar['time-range'].split('-')
-                    if int(hod) >= int(time_range[0]) and int(hod) <= int(time_range[1]):
+                    start_time, stop_time = self.getStartStopTime(rowTar['time-range'])
+                    if int(hod) >= int(start_time) and int(hod) < round(stop_time):
                         listCost[indexHis] = (rowTar['price']*volume)
                         break
-
             self.hisData['cost'] = pd.Series(listCost, index=self.hisData.index)
 
         return self.hisData
-
-
-
 
 def compare_approaches():
     '''
     Create a method compare_approaches() that compares the performance of all of your solutions and returns the results in a dictionary {“method_name”: time}
     '''
-
-    dict_hist = {'hod': [0, 5, 15, 0, 17],
-                 'volume': [512.4, 114, 28, 12, 324]
-                 }
-    df_hist = pd.DataFrame(dict_hist, columns=['hod', 'volume'])
+    #dict_hist = {'hod': [0, 5, 15, 0, 17],
+    #             'volume': [512.4, 114, 28, 12, 324]
+    #             }
+    #df_hist = pd.DataFrame(dict_hist, columns=['hod', 'volume'])
     df_hist = None
 
     dict_runtime = {}
@@ -140,6 +152,22 @@ def compare_approaches():
 
 
 
-
 if __name__ == '__main__':
-   compare_approaches()
+    compare_approaches()
+
+    # test the functions
+    # dict_hist = {'hod': [0, 5, 15, 0, 17, 18, 23],
+    #             'volume': [512.4, 114, 28, 12, 324, 100, 100]
+    #             }
+    # df_hist = pd.DataFrame(dict_hist, columns=['hod', 'volume'])
+    # #df_hist = None
+    #
+    # dict_runtime = {}
+    #
+    # start_time = time.time()
+    # internet1 = InternetData(histData=df_hist)
+    # print(internet1.tarData)
+    # internet1.add_cost(how='0')
+    # dict_runtime['0'] = time.time() - start_time
+    # print(df_hist)
+
