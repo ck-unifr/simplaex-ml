@@ -92,7 +92,7 @@ class InternetData:
         elif how == '1':
             def getDictPrice(tarData):
                 '''
-                return a dictionary {hour:price} from the tariffs dataframe
+                return a dictionary {hour:price} from the tariffs dataframe.
                 '''
                 dictPrice = {i:0 for i in range(0, 25)}
                 for index, row in tarData.iterrows():
@@ -107,7 +107,7 @@ class InternetData:
         elif how == '2':
             def f(x, tarData):
                 '''
-                for each row of the historical dataframe, get the price of the hour
+                for each row of the historical dataframe, get the price of the hour.
                 '''
                 for index, row in tarData.iterrows():
                     start_time, stop_time = self.getStartStopTime(row['time-range'])
