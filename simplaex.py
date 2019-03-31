@@ -88,10 +88,23 @@ class InternetData:
                         dictPrice[i] = row['price']
                 return dictPrice
             dictPrice = getDictPrice(self.tarData)
+            self.hisData['cost'] = self.hisData['hod'].apply(lambda x : dictPrice[int(x)]) * self.hisData['volume']
+        elif how == '1':
+            def getDictPrice(tarData):
+                '''
+                return a dictionary {hour:price} from the tariffs dataframe
+                '''
+                dictPrice = {i:0 for i in range(0, 25)}
+                for index, row in tarData.iterrows():
+                    start_time, stop_time = self.getStartStopTime(row['time-range'])
+                    for i in range(int(start_time), round(stop_time)):
+                        dictPrice[i] = row['price']
+                return dictPrice
+            dictPrice = getDictPrice(self.tarData)
             self.hisData['cost-per-mega'] = self.hisData['hod'].apply(lambda x : dictPrice[int(x)])
             self.hisData['cost'] = self.hisData['cost-per-mega']*self.hisData['volume']
-            self.hisData.drop(columns=['cost-per-mega'], inplace=True)
-        elif how == '1':
+            self.hisData.drop(['cost-per-mega'], axis=1, inplace=True)
+        elif how == '2':
             def f(x, tarData):
                 '''
                 for each row of the historical dataframe, get the price of the hour
@@ -103,8 +116,8 @@ class InternetData:
                 return 0
             self.hisData['cost-per-mega'] = self.hisData['hod'].apply(f, args=[self.tarData])
             self.hisData['cost'] = self.hisData['cost-per-mega']*self.hisData['volume']
-            self.hisData.drop(columns=['cost-per-mega'], inplace=True)
-        elif how == '2':
+            self.hisData.drop(['cost-per-mega'], axis=1, inplace=True)
+        elif how == '3':
             listCost = [0 for i in range(0, len(self.hisData.index))]
             for indexHis, rowHis in self.hisData.iterrows():
                 hod = rowHis['hod']
@@ -148,6 +161,12 @@ def compare_approaches():
     dict_runtime['2'] = time.time() - start_time
     # print(df_hist)
 
+    start_time = time.time()
+    internet4 = InternetData(histData=df_hist)
+    internet4.add_cost(how='3')
+    dict_runtime['3'] = time.time() - start_time
+    # print(df_hist)
+
     print(dict_runtime)
 
 
@@ -155,7 +174,7 @@ def compare_approaches():
 if __name__ == '__main__':
     compare_approaches()
 
-    # test the functions
+    #test the functions
     # dict_hist = {'hod': [0, 5, 15, 0, 17, 18, 23],
     #             'volume': [512.4, 114, 28, 12, 324, 100, 100]
     #             }
@@ -167,7 +186,7 @@ if __name__ == '__main__':
     # start_time = time.time()
     # internet1 = InternetData(histData=df_hist)
     # print(internet1.tarData)
-    # internet1.add_cost(how='0')
-    # dict_runtime['0'] = time.time() - start_time
+    # internet1.add_cost(how='1')
+    # dict_runtime['1'] = time.time() - start_time
     # print(df_hist)
 
